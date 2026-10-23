@@ -34,7 +34,3 @@ Place authorized input media in the notebook working directory or update paths i
 ## Limitations
 
 These are educational prototypes, not production-ready systems. The original datasets are not included; the notebooks have not been retested end-to-end in a clean environment. Counting accuracy has not been independently benchmarked.
-
-## Publication note
-
-Confirm your university's coursework-sharing rules before making this repository public. Only add media if you have redistribution rights.
