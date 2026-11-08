@@ -4,8 +4,8 @@ Detecting, tracking and counting vehicles in fixed-camera traffic recordings usi
 
 | Notebook | What it does |
 |---|---|
-| [`vehicle_detection_tracking.ipynb`](vehicle_detection_tracking.ipynb) | Detects moving vehicles and gives each one a tracking ID |
-| [`vehicle_counting.ipynb`](vehicle_counting.ipynb) | Reuses that pipeline and counts vehicles entering a zone on the road |
+| `vehicle_detection_tracking.ipynb` | Detects moving vehicles and gives each one a tracking ID |
+| `vehicle_counting.ipynb` | Reuses that pipeline and counts vehicles entering a zone on the road |
 
 ## How it works
 1. **Region of interest:** only the part of the frame with the road is processed.
