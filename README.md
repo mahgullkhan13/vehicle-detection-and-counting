@@ -1,132 +1,68 @@
-# Vehicle Detection and Traffic Counting System
+# Traffic Video Analysis with OpenCV
 
-A Python-based computer vision project developed as part of the Intelligent Signal Processing module for the University of London BSc Computer Science programme.
+Detecting, tracking and counting vehicles in fixed-camera traffic recordings using classical computer vision (Python and OpenCV), with no machine learning model or training data.
 
-The project uses OpenCV and image processing techniques to detect, track, and count moving vehicles in recorded traffic footage, providing automated traffic flow analysis.
+| Notebook | What it does |
+|---|---|
+| [`vehicle_detection_tracking.ipynb`](vehicle_detection_tracking.ipynb) | Detects moving vehicles and gives each one a tracking ID |
+| [`vehicle_counting.ipynb`](vehicle_counting.ipynb) | Reuses that pipeline and counts vehicles entering a zone on the road |
 
-## Project Overview
+## How it works
+1. **Region of interest:** only the part of the frame with the road is processed.
+2. **Motion detection:** frame differencing and MOG2 background subtraction are combined with a bitwise OR.
+3. **Mask cleanup:** morphological opening removes noise and dilation fills gaps.
+4. **Detection:** contours above 900 pixels become vehicle detections.
+5. **Tracking:** detections are matched to existing tracks by centroid distance, so a vehicle keeps its ID across frames.
+6. **Counting (notebook 2):** a vehicle is counted when its tracked centroid moves from outside to inside a zone drawn on the road.
 
-The system processes traffic videos to identify moving vehicles, track their movement across frames, and count vehicles entering a predefined region of interest (ROI).
+![Pipeline stages on a single frame](images/pipeline_stages.png)
 
-It combines motion detection, background subtraction, contour analysis, and centroid-based object tracking to monitor traffic activity.
+All tuning values (thresholds, kernel sizes, region of interest, zone) sit in one configuration cell at the top of each notebook.
 
-## Key Features
+## Part 1: Detection and tracking
+Tested on a 3-minute clip (4,448 frames) from a downtown traffic webcam.
 
-- **Vehicle Detection:** Identifies moving vehicles using frame differencing and MOG2 background subtraction.
-- **Object Tracking:** Tracks detected vehicles across consecutive frames using centroid-based tracking.
-- **Region of Interest (ROI):** Filters detections to focus on designated areas of the road.
-- **Vehicle Counting:** Counts unique vehicles entering a predefined polygonal downtown zone.
-- **Traffic Flow Analysis:** Calculates vehicle counts and traffic flow rates.
-- **Video Processing:** Uses OpenCV to process recorded traffic footage frame by frame.
+| Measure | Value |
+|---|---|
+| Vehicles counted manually | 17 |
+| Track IDs created | 139 |
+| IDs per vehicle | about 8 |
 
-## Technologies Used
+The manual count includes every moving car, SUV, truck or van that entered the lower street region, counted once. Parked vehicles, pedestrians and cyclists were excluded.
 
-- Python
-- OpenCV
-- NumPy
-- Jupyter Notebook
-- Computer Vision
-- Image Processing
+The number of IDs is not an accuracy score. It shows that motion detection picks up the vehicles, but the simple centroid tracker **fragments each vehicle into several IDs**.
 
-## Project Structure
+### Failure cases
+- **ID switch:** the same silver SUV is ID 85 at frame 3000 and ID 87 at frame 3060.
+  ![ID switch](images/id_switch_frame3000.png) ![ID switch](images/id_switch_frame3060.png)
+- **Split detection:** one gray sedan is covered by two boxes (IDs 121 and 122) at frame 4080.
+  ![Split detection](images/split_detection_frame4080.png)
+- **Merged vehicles:** one box (ID 115) covers a pickup and a red SUV at frame 3960. Other vehicles in that frame have no box.
+  ![Merged vehicles](images/merged_vehicles_frame3960.png)
 
-```text
-vehicle-detection-and-counting/
-│
-├── vehicle_detection_tracking.ipynb
-├── vehicle_counting.ipynb
-├── requirements.txt
-└── README.md
+## Part 2: Counting vehicles in a zone
+Counts vehicles entering a zone on the road (the red box below) during the first 2 minutes of two recordings. The blue box is the region of interest.
+
+![Region of interest and counting zone](images/zone_video1.png)
+
+| Video | Original zone (far end of street) | Zone on the road |
+|---|---:|---:|
+| Traffic_Laramie_1.mp4 | 1 | 9 |
+| Traffic_Laramie_2.mp4 | 3 | 4 |
+
+The original zone covered mostly building fronts and the far end of the street, where vehicles are small. Moving it onto the road above the crosswalk raised the counts to 9 and 4.
+
+These are counts of tracking IDs, not verified vehicle counts. As Part 1 shows, the tracker can give one vehicle several IDs, which could make the count too high, and small or distant vehicles may be missed. The counts have not been checked against a manual count.
+
+## Possible improvements
+Minimum track age to filter noise IDs, Kalman filtering, Hungarian assignment, merging fragmented boxes, a deep-learning detector such as YOLO, and counting vehicles when they cross a line instead of counting IDs.
+
+## Run it
 ```
-
-### Notebook Descriptions
-
-**1. vehicle_detection_tracking.ipynb**
-
-Implements vehicle detection and tracking using frame differencing, MOG2 background subtraction, contour detection, ROI filtering, and centroid-based tracking.
-
-**2. vehicle_counting.ipynb**
-
-Implements vehicle tracking and counting, identifying unique vehicles entering a predefined polygonal zone and calculating traffic flow statistics.
-
-## How It Works
-
-1. **Video Input:** Loads recorded traffic footage.
-2. **Frame Processing:** Processes individual video frames using OpenCV.
-3. **Motion Detection:** Identifies moving objects through frame differencing and background subtraction.
-4. **Object Detection:** Uses contours and filtering to identify potential vehicles.
-5. **Vehicle Tracking:** Associates detected objects across frames using centroid tracking.
-6. **Vehicle Counting:** Counts vehicles entering the designated region.
-7. **Traffic Analysis:** Calculates vehicle counts and traffic flow rates.
-
-## Results
-
-The system was evaluated using two recorded traffic videos.
-
-| Video | Vehicles Counted | Traffic Flow |
-|---|---|---|
-| Traffic_Laramie_1.mp4 | 1 | 0.50 vehicles/min |
-| Traffic_Laramie_2.mp4 | 3 | 1.50 vehicles/min |
-
-These results represent the vehicle counts reported during coursework testing, not independently benchmarked detection accuracy.
-
-## Installation and Setup
-
-### 1. Clone the Repository
-
-```bash
-git clone https://github.com/mahgullkhan13/vehicle-detection-and-counting.git
-cd vehicle-detection-and-counting
-```
-
-### 2. Install Dependencies
-
-```bash
 pip install -r requirements.txt
-pip install jupyter
-```
-
-### 3. Prepare Video Files
-
-The project uses the following traffic videos:
-
-- `Traffic_Laramie_1.mp4`
-- `Traffic_Laramie_2.mp4`
-
-The original video files are not included in this repository.
-
-Place authorised copies of the videos in the notebook's working directory, or update the video paths in the notebooks.
-
-### 4. Run the Project
-
-Start Jupyter Notebook:
-
-```bash
 jupyter notebook
 ```
+The notebooks expect `Traffic_Laramie_1.mp4` (and `Traffic_Laramie_2.mp4` for notebook 2) in the same folder. The videos are not included. To try them on other footage, use a fixed-camera traffic video and adjust the region of interest and zone in the configuration cell.
 
-Open either `vehicle_detection_tracking.ipynb` or `vehicle_counting.ipynb` and execute the cells in order.
-
-Some notebook paths may require adjustment when running outside the original development environment.
-
-## Limitations
-
-- The system is designed for recorded traffic footage rather than real-time deployment.
-- Detection performance may be affected by lighting, occlusion, and camera positioning.
-- Vehicle counting accuracy has not been independently benchmarked.
-- Original video datasets are not included.
-- The notebooks have not been independently retested end-to-end in a clean environment.
-
-## Future Improvements
-
-- Integrate deep learning-based vehicle detection using YOLO.
-- Improve object tracking using more advanced tracking algorithms.
-- Add real-time traffic monitoring capabilities.
-- Develop a dashboard for visualising traffic statistics.
-- Evaluate detection and counting accuracy against manually annotated video data.
-
-## Academic Context
-
-Developed as part of the **BSc Computer Science – University of London**, Intelligent Signal Processing coursework.
-
-The project demonstrates practical applications of computer vision, motion detection, object tracking, and automated traffic analysis.
+## About
+Built for the Image and Signal Processing module of the University of London BSc Computer Science. The test videos are Visit Laramie downtown webcam recordings supplied with the coursework.
